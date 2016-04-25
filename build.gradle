@@ -1,0 +1,84 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.jooq:jooq-codegen:3.6.1'
+        classpath 'com.h2database:h2:1.4.188'
+        classpath 'org.flywaydb:flyway-core:3.2.1'
+    }
+}
+
+import org.flywaydb.core.Flyway
+
+group 'com.coderskitchen'
+version '1.0.0'
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+sourceCompatibility = 1.5
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    compile.extendsFrom generatedCompile
+}
+
+sourceSets {
+    generated
+    main {
+        compileClasspath += generated.output
+    }
+}
+
+dependencies {
+    generatedCompile 'org.jooq:jooq:3.6.1',
+        'org.jooq:jooq-meta:3.6.1',
+        'org.jooq:jooq-codegen:3.6.1'
+
+    compile 'org.flywaydb:flyway-core:3.2.1',
+        'com.h2database:h2:1.4.188'
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+def writer = new StringWriter()
+new groovy.xml.MarkupBuilder(writer)
+    .configuration('xmlns': 'http://www.jooq.org/xsd/jooq-codegen-3.6.0.xsd') {
+    jdbc() {
+        driver('org.h2.Driver')
+        url("jdbc:h2:file:${project.projectDir}/build/generator/${project.name}")
+        user('sa')
+        password('')
+    }
+    generator() {
+        database() {
+        }
+        generate() {
+        }
+        target() {
+            packageName('com.coderskitchen.example')
+            directory('src/generated/java')
+        }
+    }
+}
+
+task generateJOOQ() {
+    doLast {
+        def Flyway flyway = new Flyway();
+        flyway.setDataSource("jdbc:h2:file:${project.projectDir}/build/generator/${project.name}", "sa", null);
+        flyway.setLocations("filesystem:${project.projectDir}/src/main/resources/db/migration")
+        flyway.migrate();
+        org.jooq.util.GenerationTool.generate(
+            javax.xml.bind.JAXB.unmarshal(new StringReader(writer.toString()), org.jooq.util.jaxb.Configuration.class)
+        )
+    }
+}
+
+compileGeneratedJava.dependsOn clean
+compileGeneratedJava.dependsOn generateJOOQ
+compileJava.dependsOn compileGeneratedJava
