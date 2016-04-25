@@ -39,9 +39,9 @@ public class Application {
 
   private static void createData(DSLContext dslContext) {
     dslContext.insertInto(Tables.RACE_DATE)
-              .columns(Tables.RACE_DATE.RACE_DATE_, Tables.RACE_DATE.RACE_PLACE)
-              .values(new Date(2016, 1, 12), "Lake Baldeney, Essen")
-              .values(new Date(2016, 3, 12), "Möhnetalsperre, Möhnesee")
+              .columns(Tables.RACE_DATE.RACE_DATE_, Tables.RACE_DATE.RACE_PLACE_ID)
+              .values(new Date(2016, 1, 12), 1)
+              .values(new Date(2016, 3, 12), 2)
               .execute();
   }
 
